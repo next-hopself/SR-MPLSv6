@@ -5,8 +5,8 @@
 SPRING                                                           D. Swer
 Internet-Draft                                             Swer Networks
 Intended status: Standards Track                               B. Herdes
-Expires: 29 May 2027                                          Cloudflare
-                                                        25 November 2026
+Expires: 1 June 2027                                          Cloudflare
+                                                        28 November 2026
 
 
   IPv4 Traffic over an IPv6-Only Segment Routing MPLS Underlay Network
@@ -55,7 +55,7 @@ Status of This Memo
    time.  It is inappropriate to use Internet-Drafts as reference
    material or to cite them other than as "work in progress."
 
-   This Internet-Draft will expire on 29 May 2027.
+   This Internet-Draft will expire on 1 June 2027.
 
 Copyright Notice
 
@@ -93,7 +93,7 @@ Table of Contents
    5.  Example Topologies
    6.  Operational Considerations
      6.1.  Deployment
-     6.2.  IPv4 Packets on IPv6-Only Links
+     6.2.  IPv4 Forwarding over IPv6-Only Links
      6.3.  Label Stack Depth
      6.4.  Equal-Cost Multipath
      6.5.  Operations, Administration, and Maintenance
@@ -161,14 +161,14 @@ Table of Contents
    bound to that address.  No additional label is needed to identify
    IPv4 packets.
 
-   This document introduces layer 3 (network layer) awareness into the
-   SR-MPLS data plane.  Depending on the network configuration and
-   topology, the first hop, penultimate hop, or ultimate hop inspects
-   the payload's network layer header to determine its address family
-   and applies the corresponding forwarding procedures.  Section 2
-   describes the problem in detail, Section 3 specifies procedures,
-   Section 4 specifies IPv6 TE Router ID requirements, and Section 5
-   illustrates the reference topologies they address.
+   This document specifies how SR-MPLSv6 nodes identify the payload's
+   network layer protocol (IPv4 or IPv6) and use that information to
+   select the appropriate forwarding treatment.  These network layer
+   awareness procedures cover penultimate hop popping, selection of an
+   Explicit NULL label, and ultimate hop popping.  Section 2 describes
+   the problem in detail, Section 3 specifies procedures, Section 4
+   specifies IPv6 TE Router ID requirements, and Section 5 illustrates
+   the reference topologies they address.
 
 1.1.  Requirements Language
 
@@ -295,11 +295,16 @@ Table of Contents
 
    If the value is selected according to the address family of the
    prefix to which the Prefix-SID is bound, the IPv4 packet is sent to
-   the ultimate hop with the IPv6 Explicit NULL label.  That label
+   the ultimate hop with the IPv6 Explicit NULL label (2).  That label
    specifies that, after it is popped, forwarding is based on the IPv6
-   header (Section 2.1 of [RFC3032]).  The label therefore identifies
-   the payload as IPv6 even though the packet is IPv4.  This mismatch
-   may cause the ultimate hop to discard the packet.
+   header (Section 2.1 of [RFC3032]).  In the global routing context
+   considered here, this directs the exposed IPv4 packet to IPv6
+   processing rather than IPv4 processing.  The packet's Version field
+   is inconsistent with the selected network layer protocol action.
+   Therefore, an implementation that checks this field against the
+   selected protocol action will discard the packet instead of
+   incorrectly forwarding an IPv4 packet using the global IPv6
+   forwarding table.
 
 2.4.  Ultimate Hop Popping
 
@@ -318,10 +323,15 @@ Table of Contents
    on the instruction associated with the label and on the contents of
    the exposed packet (Section 2.10.2 of [RFC8660]).
 
-   If the forwarding instruction selects IPv6 processing solely because
-   the Prefix-SID is bound to an IPv6 prefix, an exposed IPv4 packet is
-   passed to the IPv6 forwarding path.  As in Section 2.3, this mismatch
-   may cause the ultimate hop to discard the packet.
+   If the Label Forwarding Information Base (LFIB) entry for the Prefix-
+   SID label selects IPv6 processing solely because the Prefix-SID is
+   bound to an IPv6 prefix, popping the label directs the exposed IPv4
+   packet to IPv6 processing in the global routing context.  As in
+   Section 2.3, the packet's Version field is inconsistent with the
+   selected network layer protocol action.  Therefore, an implementation
+   that checks this field against the selected protocol action will
+   discard the packet instead of incorrectly forwarding an IPv4 packet
+   using the global IPv6 forwarding table.
 
 2.5.  Existing Workarounds
 
@@ -658,7 +668,7 @@ Table of Contents
    //
    // -- Editors
 
-6.2.  IPv4 Packets on IPv6-Only Links
+6.2.  IPv4 Forwarding over IPv6-Only Links
 
    With the procedure in Section 3.2, the ultimate hop receives native
    IPv4 packets on core-facing interfaces that have no IPv4 address.

@@ -124,8 +124,8 @@ version="3">
         No additional label is needed to identify IPv4 packets.
       </t>
       <t>
-        This document introduces layer 3 (network layer) awareness into the SR-MPLS data plane.
-        Depending on the network configuration and topology, the first hop, penultimate hop, or ultimate hop inspects the payload's network layer header to determine its address family and applies the corresponding forwarding procedures.
+        This document specifies how SR-MPLSv6 nodes identify the payload's network layer protocol (IPv4 or IPv6) and use that information to select the appropriate forwarding treatment.
+        These network layer awareness procedures cover penultimate hop popping, selection of an Explicit NULL label, and ultimate hop popping.
         <xref target="problem"/> describes the problem in detail, <xref target="procedures"/> specifies procedures, <xref target="te-router-id"/> specifies IPv6 TE Router ID requirements, and <xref target="topologies"/> illustrates the reference topologies they address.
       </t>
 
@@ -234,10 +234,11 @@ version="3">
           These specifications do not explicitly state whether the value is selected according to the address family of the advertised prefix or according to the network layer protocol of the packet being forwarded.
         </t>
         <t>
-          If the value is selected according to the address family of the prefix to which the Prefix-SID is bound, the IPv4 packet is sent to the ultimate hop with the IPv6 Explicit NULL label.
+          If the value is selected according to the address family of the prefix to which the Prefix-SID is bound, the IPv4 packet is sent to the ultimate hop with the IPv6 Explicit NULL label (2).
           That label specifies that, after it is popped, forwarding is based on the IPv6 header (<xref target="RFC3032" section="2.1"/>).
-          The label therefore identifies the payload as IPv6 even though the packet is IPv4.
-          This mismatch may cause the ultimate hop to discard the packet.
+          In the global routing context considered here, this directs the exposed IPv4 packet to IPv6 processing rather than IPv4 processing.
+          The packet's Version field is inconsistent with the selected network layer protocol action.
+          Therefore, an implementation that checks this field against the selected protocol action will discard the packet instead of incorrectly forwarding an IPv4 packet using the global IPv6 forwarding table.
         </t>
       </section>
 
@@ -254,8 +255,9 @@ version="3">
           The action after popping depends on the instruction associated with the label and on the contents of the exposed packet (<xref target="RFC8660" section="2.10.2"/>).
         </t>
         <t>
-          If the forwarding instruction selects IPv6 processing solely because the Prefix-SID is bound to an IPv6 prefix, an exposed IPv4 packet is passed to the IPv6 forwarding path.
-          As in <xref target="problem-explicit-null"/>, this mismatch may cause the ultimate hop to discard the packet.
+          If the Label Forwarding Information Base (LFIB) entry for the Prefix-SID label selects IPv6 processing solely because the Prefix-SID is bound to an IPv6 prefix, popping the label directs the exposed IPv4 packet to IPv6 processing in the global routing context.
+          As in <xref target="problem-explicit-null"/>, the packet's Version field is inconsistent with the selected network layer protocol action.
+          Therefore, an implementation that checks this field against the selected protocol action will discard the packet instead of incorrectly forwarding an IPv4 packet using the global IPv6 forwarding table.
         </t>
       </section>
 
@@ -559,7 +561,7 @@ CE1 ----- PE1 ----------<          >---------- PE2 ----- CE2
       </section>
 
       <section anchor="ops-ipv6-only-links">
-        <name>IPv4 Packets on IPv6-Only Links</name>
+        <name>IPv4 Forwarding over IPv6-Only Links</name>
         <t>
           With the procedure in <xref target="implicit-null"/>, the ultimate hop receives native IPv4 packets on core-facing interfaces that have no IPv4 address.
           The penultimate hop resolves the link-layer address of the ultimate hop using IPv6 Neighbor Discovery <xref target="RFC4861"/>, so neither an IPv4 address nor ARP is needed on the link.
