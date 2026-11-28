@@ -22,10 +22,14 @@ subject to a Simplified BSD License) in Contributions. See the
   in RFC XML v3 ([RFC 7991](https://www.rfc-editor.org/info/rfc7991)).
 - Authoring convention: one sentence per line, so that diffs stay reviewable.
 - Keep artwork within 69 columns so that it fits the 72-column text output.
-- Run `make` and `make idnits` before opening a pull request; CI runs both.
-- `make` refreshes the plain-text copy,
-  [`draft-swer-spring-sr-mplsv6.txt`](draft-swer-spring-sr-mplsv6.txt), when the
-  XML changes. Commit it together with the XML and do not edit it by hand; CI
-  fails if it is out of date.
-- Bump the revision in both `docName` and `<seriesInfo>` only when submitting a
-  new version to the datatracker.
+- For draft changes, run `make` and `make idnits`, then commit the XML and
+  regenerated TXT together. After committing, run `make check-readable` to
+  verify that the committed TXT matches the XML.
+- The plain-text copy,
+  [`draft-swer-spring-sr-mplsv6.txt`](draft-swer-spring-sr-mplsv6.txt), is
+  generated from the XML. Do not edit it by hand. README-only and other
+  documentation changes do not need regeneration; CI checks every pull request.
+- Leave the draft revision unchanged for ordinary edits. Update `docName` and
+  `<seriesInfo>` together when preparing an agreed IETF Datatracker submission.
+- `make submit` generates expanded XML locally; it does not upload or submit
+  the draft.
